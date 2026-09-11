@@ -20,7 +20,6 @@ services:
       - backend
   mysql:
     image: mysql:8
-    container_name: mysql-container
     environment:
       MYSQL_ROOT_PASSWORD: abhinavfu
       MYSQL_DATABASE: employee_db
