@@ -2,51 +2,59 @@
 pipeline {
     agent any
 
-    environment {
-        APP_DIR = '/home/ubuntu/docker-fastapi-react-mysql'
-    }
-
     stages {
 
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Krishnaranibal13/docker-fastapi-react-mysql.git'
+                checkout scm
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Build Docker Images') {
             steps {
                 sh '''
-                    echo "Deploying application..."
+                    echo "Building Docker images..."
+                    docker compose build
+                '''
+            }
+        }
 
-                    cd ${APP_DIR}
-
-                    echo "Pulling latest code..."
-                    git pull origin main
-
+        stage('Deploy') {
+            steps {
+                sh '''
                     echo "Stopping old containers..."
                     docker compose down
 
-                    echo "Building latest images..."
-                    docker compose build --no-cache
-
-                    echo "Starting containers..."
+                    echo "Starting application..."
                     docker compose up -d
+                '''
+            }
+        }
 
-                    echo "Waiting for services..."
-                    sleep 20
-
+        stage('Check Containers') {
+            steps {
+                sh '''
                     echo "Checking containers..."
                     docker compose ps
+                '''
+            }
+        }
 
-                    echo "Backend health check..."
-                    curl -f http://localhost:8000/docs || exit 1
+        stage('Backend Health Check') {
+            steps {
+                sh '''
+                    echo "Checking backend..."
+                    sleep 10
+                    curl -f http://localhost:8000/docs
+                '''
+            }
+        }
 
-                    echo "Frontend health check..."
-                    curl -f http://localhost:3000 || exit 1
-
-                    echo "Deployment successful!"
+        stage('Frontend Health Check') {
+            steps {
+                sh '''
+                    echo "Checking frontend..."
+                    curl -f http://localhost:3000
                 '''
             }
         }
@@ -54,7 +62,7 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment completed successfully!'
+            echo 'Deployment successful!'
         }
 
         failure {
@@ -67,4 +75,6 @@ pipeline {
         }
     }
 }
+
+
 
